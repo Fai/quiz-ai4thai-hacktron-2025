@@ -119,7 +119,7 @@ async fn get_time(
     );
 
     match client
-        .get(&format!("{}/time", api2_url))
+        .get(format!("{api2_url}/time"))
         .query(&query_params)
         .send()
         .await
