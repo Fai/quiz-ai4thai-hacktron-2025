@@ -5,12 +5,12 @@ A cloud-native microservices architecture built with Rust, featuring two API ser
 ## Architecture Overview
 
 ```
-User Request → API1 (Gateway:3000/3443) → API2 (Time Provider:4000/4443) → Response
+User Request → API1 (Gateway:3000) → API2 (Time Provider:4000) → Response
 ```
 
 - **API1** (Gateway Service): Receives user requests and forwards them to API2
 - **API2** (Time Provider): Returns current server datetime based on timezone
-- Both services run on standard HTTP (3000, 4000) and secure HTTPS (3443, 4443) ports
+- Both services run on standard HTTP ports (3000, 4000)
 - Comprehensive logging and monitoring
 - Containerized with Docker and orchestrated with Docker Compose
 
@@ -39,29 +39,22 @@ User Request → API1 (Gateway:3000/3443) → API2 (Time Provider:4000/4443) →
 
 ### Core Application Files:
 
-Cargo.toml - Workspace configuration with shared dependencies
-api1/src/main.rs - Gateway service that forwards requests to API2
-api2/src/main.rs - Time provider service that returns server datetime
-api1/Cargo.toml & api2/Cargo.toml - Individual service dependencies
+- **Cargo.toml** - Workspace configuration with shared dependencies
+- **api1/src/main.rs** - Gateway service that forwards requests to API2
+- **api2/src/main.rs** - Time provider service that returns server datetime
+- **api1/Cargo.toml & api2/Cargo.toml** - Individual service dependencies
 
 ### Docker & Deployment:
 
-docker-compose.yml - Full orchestration with health checks, networking, and resource limits
-api1/Dockerfile & api2/Dockerfile - Multi-stage builds with security best practices
-scripts/deploy.sh - Production-ready deployment script
-scripts/test.sh - Comprehensive testing script
-
-### Development & CI/CD:
-
-Makefile - Development workflow automation
-.github/workflows/ci.yml - Complete CI/CD pipeline
-README.md - Comprehensive documentation
-LICENSE - MIT license
+- **docker-compose.yml** - Full orchestration with health checks, networking, and resource limits
+- **api1/Dockerfile & api2/Dockerfile** - Multi-stage builds with security best practices
+- **scripts/deploy.sh** - Production-ready deployment script
+- **scripts/test.sh** - Comprehensive testing script
 
 ## Features
 
 - ✅ **Cloud-Native Architecture**: Microservices with proper service discovery
-- ✅ **Security**: HTTPS endpoints, non-root containers, resource limits
+- ✅ **Security**: Secure endpoints, resource limits
 - ✅ **Observability**: Structured logging, health checks, request tracing
 - ✅ **Reliability**: Graceful error handling, circuit breaker patterns
 - ✅ **Scalability**: Containerized services with resource management
@@ -70,13 +63,13 @@ LICENSE - MIT license
 ## API Endpoints
 
 ### API1 (Gateway Service)
-- **Base URL**: `http://localhost:3000` (HTTP) / `https://localhost:3443` (HTTPS)
+- **Base URL**: `http://localhost:3000`
 - `GET /` - Service information
 - `GET /health` - Health check endpoint
 - `GET /time?timezone=<tz>` - Get current time (forwards to API2)
 
 ### API2 (Time Provider)
-- **Base URL**: `http://localhost:4000` (HTTP) / `https://localhost:4443` (HTTPS)
+- **Base URL**: `http://localhost:4000`
 - `GET /` - Service information
 - `GET /health` - Health check endpoint
 - `GET /time?timezone=<tz>` - Get current server time
@@ -97,7 +90,7 @@ LICENSE - MIT license
 ### 1. Clone the Repository
 ```bash
 git clone <repository-url>
-cd time-service-api
+cd quiz-ai4thai-hacktron-2025
 ```
 
 ### 2. Build and Run with Docker Compose
@@ -121,33 +114,6 @@ curl "http://localhost:3000/time?timezone=EST"
 ```
 
 ## Development
-
-### Using Make Commands
-```bash
-# Setup development environment
-make dev-setup
-
-# Build and run services
-make run
-
-# Run in background
-make dev-up
-
-# Stop services
-make dev-down
-
-# View logs
-make logs
-
-# Health check
-make health-check
-
-# Test endpoints
-make test-endpoints
-
-# Clean up
-make clean
-```
 
 ### Local Development
 ```bash
@@ -183,23 +149,11 @@ curl -X GET "http://localhost:4000/health"
 ### Expected Response Format
 ```json
 {
-  "timestamp": "2024-01-20T15:30:45.123Z",
+  "timestamp": "2025-07-20T15:30:45.123Z",
   "timezone": "UTC",
   "request_id": "550e8400-e29b-41d4-a716-446655440000",
   "source": "api1->api2"
 }
-```
-
-### Load Testing
-```bash
-# Install hey (HTTP load testing tool)
-go install github.com/rakyll/hey@latest
-
-# Basic load test
-hey -n 1000 -c 10 http://localhost:3000/time
-
-# Load test with different timezones
-hey -n 500 -c 5 "http://localhost:3000/time?timezone=EST"
 ```
 
 ## Monitoring and Observability
@@ -232,13 +186,6 @@ Both services provide comprehensive health checks:
 - Application-level health endpoints
 - Service dependency checks
 
-### Metrics
-Key metrics to monitor:
-- Request latency
-- Error rates
-- Service availability
-- Resource utilization
-
 ## Configuration
 
 ### Environment Variables
@@ -254,24 +201,13 @@ Key metrics to monitor:
 ## Security Considerations
 
 ### Container Security
-- Non-root user execution
-- Minimal base images
-- Multi-stage builds
 - Resource limits
+- Health checks
+- Proper error handling
 
 ### Network Security
 - Internal service communication
-- CORS configuration
 - Request/response validation
-
-### Production Deployment
-For production deployment, consider:
-- TLS/SSL certificate configuration
-- API rate limiting
-- Authentication and authorization
-- Database integration for persistent storage
-- Load balancing
-- Service mesh (Istio, Linkerd)
 
 ## Troubleshooting
 
@@ -299,114 +235,9 @@ For production deployment, consider:
    lsof -i :4000
    ```
 
-4. **Memory or CPU issues**
-   ```bash
-   # Check resource usage
-   docker stats
-   ```
-
-### Debug Mode
-```bash
-# Run with debug logging
-RUST_LOG=debug docker-compose up
-
-# Access container shell
-docker-compose exec api1 /bin/bash
-```
-
-## Contributing
-
-### Development Workflow
-1. Fork the repository
-2. Create a feature branch
-3. Make changes and test locally
-4. Run tests and linting
-5. Submit a pull request
-
-### Code Quality
-```bash
-# Format code
-cargo fmt
-
-# Run linter
-cargo clippy
-
-# Run tests
-cargo test
-
-# Security audit
-cargo audit
-```
-
-### Git Hooks
-Consider setting up pre-commit hooks:
-```bash
-# Install pre-commit
-pip install pre-commit
-
-# Setup hooks
-pre-commit install
-```
-
-## Architecture Decisions
-
-### Technology Stack
-- **Rust**: Memory safety, performance, and concurrency
-- **Axum**: Modern, ergonomic web framework
-- **Tokio**: Async runtime for high-performance I/O
-- **Tower**: Middleware and service abstractions
-- **Docker**: Containerization and deployment
-
-### Design Patterns
-- **Gateway Pattern**: API1 acts as a gateway to API2
-- **Health Check Pattern**: Comprehensive health monitoring
-- **Circuit Breaker**: Graceful error handling
-- **Structured Logging**: Consistent log format across services
-
-## Performance Considerations
-
-### Optimization Strategies
-- Connection pooling for HTTP clients
-- Async/await for non-blocking I/O
-- Efficient JSON serialization
-- Memory-efficient data structures
-
-### Benchmarks
-Expected performance characteristics:
-- **Latency**: < 10ms for local requests
-- **Throughput**: > 1000 requests/second
-- **Memory**: < 50MB per service
-- **CPU**: < 10% under normal load
-
-## Future Enhancements
-
-### Planned Features
-- [ ] Authentication and authorization
-- [ ] Rate limiting
-- [ ] Caching layer (Redis)
-- [ ] Database integration
-- [ ] Metrics collection (Prometheus)
-- [ ] Distributed tracing (Jaeger)
-- [ ] API versioning
-- [ ] WebSocket support
-
-### Infrastructure
-- [ ] Kubernetes deployment
-- [ ] Helm charts
-- [ ] CI/CD pipeline
-- [ ] Infrastructure as Code (Terraform)
-- [ ] Service mesh integration
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-For support and questions:
-- Create an issue on GitHub
-- Check the troubleshooting section
-- Review the logs for error details
 
 ---
 

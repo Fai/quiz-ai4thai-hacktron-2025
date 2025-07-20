@@ -39,26 +39,27 @@ FROM alpine:3.19
 RUN apk add --no-cache \
     ca-certificates \
     curl \
+    wget \
     libgcc
-
-# Create non-root user
-RUN adduser -D -s /bin/sh appuser
 
 # Copy the binary
 COPY --from=builder /app/target/release/api2 /usr/local/bin/api2
 
-# Change ownership
-RUN chown appuser:appuser /usr/local/bin/api2
+# Change ownership and make executable
+RUN chmod +x /usr/local/bin/api2
 
-# Switch to non-root user
-USER appuser
+# Create a simple startup script
+RUN echo '#!/bin/sh' > /usr/local/bin/start.sh && \
+    echo 'echo "Starting API2..."' >> /usr/local/bin/start.sh && \
+    echo 'api2' >> /usr/local/bin/start.sh && \
+    chmod +x /usr/local/bin/start.sh
 
 # Expose ports
-EXPOSE 4000 4443
+EXPOSE 4000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:4000/health || exit 1
+# Health check with more frequent checks during startup
+HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=5 \
+    CMD wget -q -O - http://localhost:4000/health || exit 1
 
-# Run the application
-CMD ["api2"]
+# Run the application with the startup script
+CMD ["/usr/local/bin/start.sh"]

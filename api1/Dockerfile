@@ -6,7 +6,8 @@ RUN apk add --no-cache \
     musl-dev \
     pkgconfig \
     openssl-dev \
-    curl
+    curl \
+    openssl-libs-static
 
 # Set working directory
 WORKDIR /app
@@ -29,7 +30,9 @@ RUN rm -rf api1/src api2/src
 COPY api1/src ./api1/src
 COPY api2/src ./api2/src
 
-# Build the application
+# Build the application with static linking
+ENV OPENSSL_STATIC=1
+ENV OPENSSL_DIR=/usr
 RUN cargo build --release --bin api1
 
 # Runtime stage
@@ -39,26 +42,27 @@ FROM alpine:3.19
 RUN apk add --no-cache \
     ca-certificates \
     curl \
+    wget \
     libgcc
-
-# Create non-root user
-RUN adduser -D -s /bin/sh appuser
 
 # Copy the binary
 COPY --from=builder /app/target/release/api1 /usr/local/bin/api1
 
-# Change ownership
-RUN chown appuser:appuser /usr/local/bin/api1
+# Change ownership and make executable
+RUN chmod +x /usr/local/bin/api1
 
-# Switch to non-root user
-USER appuser
+# Create a simple startup script
+RUN echo '#!/bin/sh' > /usr/local/bin/start.sh && \
+    echo 'echo "Starting API1..."' >> /usr/local/bin/start.sh && \
+    echo 'api1' >> /usr/local/bin/start.sh && \
+    chmod +x /usr/local/bin/start.sh
 
 # Expose ports
-EXPOSE 3000 3443
+EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3000/health || exit 1
+# Health check with more frequent checks during startup
+HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=5 \
+    CMD wget -q -O - http://localhost:3000/health || exit 1
 
-# Run the application
-CMD ["api1"]
+# Run the application with the startup script
+CMD ["/usr/local/bin/start.sh"]

@@ -1,6 +1,7 @@
 use axum::{extract::Query, http::StatusCode, response::Json, routing::get, Router};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::net::SocketAddr;
 use tower::ServiceBuilder;
 use tower_http::{
     cors::{Any, CorsLayer},
@@ -30,54 +31,50 @@ struct TimeQuery {
 }
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() {
     // Initialize tracing
-    tracing_subscriber::fmt()
+    let subscriber = tracing_subscriber::fmt()
         .with_env_filter("api1=debug,tower_http=debug")
-        .init();
-
+        .finish();
+    
+    tracing::subscriber::set_global_default(subscriber)
+        .expect("Failed to set tracing subscriber");
+    
+    println!("API1 starting up...");
+    info!("API1 initializing");
+    
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
         .allow_headers(Any);
-
+    
+    println!("CORS layer created");
+    
     // Create a function to build the router
-    let create_app = || {
-        Router::new()
-            .route("/", get(root))
-            .route("/health", get(health_check))
-            .route("/time", get(get_time))
-            .layer(
-                ServiceBuilder::new()
-                    .layer(TraceLayer::new_for_http())
-                    .layer(cors.clone()),
-            )
-    };
+    let app = Router::new()
+        .route("/", get(root))
+        .route("/health", get(health_check))
+        .route("/time", get(get_time))
+        .layer(
+            ServiceBuilder::new()
+                .layer(TraceLayer::new_for_http())
+                .layer(cors),
+        );
 
-    info!("API1 starting on ports 3000 (HTTP) and 3443 (HTTPS)");
+    info!("API1 starting on port 3000 (HTTP)");
+    println!("API1 starting on port 3000 (HTTP)");
 
-    // Start HTTP server
-    let http_listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
-    info!("HTTP server listening on: {}", http_listener.local_addr()?);
-
-    let http_app = create_app();
-    tokio::spawn(async move {
-        if let Err(e) = axum::serve(http_listener, http_app).await {
-            error!("HTTP server error: {}", e);
-        }
-    });
-
-    // Start HTTPS server (for production, you'd add TLS configuration)
-    let https_listener = tokio::net::TcpListener::bind("0.0.0.0:3443").await?;
-    info!(
-        "HTTPS server listening on: {}",
-        https_listener.local_addr()?
-    );
-
-    let https_app = create_app();
-    axum::serve(https_listener, https_app).await?;
-
-    Ok(())
+    // Bind to address
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+    println!("Binding to {}", addr);
+    
+    // Start the server
+    println!("Starting server...");
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    println!("Server listening on {}", addr);
+    info!("HTTP server listening on: {}", addr);
+    
+    axum::serve(listener, app).await.unwrap();
 }
 
 async fn root() -> &'static str {
