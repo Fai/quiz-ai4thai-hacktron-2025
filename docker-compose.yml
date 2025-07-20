@@ -66,6 +66,7 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    command: ["/usr/local/bin/start.sh"]
 
 networks:
   time-service-network:
